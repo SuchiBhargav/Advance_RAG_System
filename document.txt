@@ -1,0 +1,28 @@
+python3 -m venv virenv    #virenv is name of virtal environment
+source virenv/bin/activate
+pip install <package_name>
+deactivate  #to stop virtual env
+
+
+
+# to see list of all the installed packages 
+pip list
+
+
+ollama run llama2
+ollama serve 
+if ollama running in background - pkill ollama
+else ctrl+c
+
+
+    Starts the Ollama inference server on localhost:11434.
+
+    Without this, no API is available to accept requests.
+
+ollama run mistral
+
+    Loads the mistral model into memory, ready to answer questions.
+
+    You must do this at least once after starting the server.
+
+    Once the model is running, Ollama can handle queries and embedding requests.
