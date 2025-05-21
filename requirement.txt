@@ -1,6 +1,8 @@
 streamlit
 ollama
-langchain_community
+langchain-community
 faiss-cpu
-pypdf
+langchain-ollama
+
+
 

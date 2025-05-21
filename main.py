@@ -11,6 +11,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.chains import LLMChain
 from langchain_ollama import OllamaLLM
+from langchain_core.prompts import ChatPromptTemplate
 
 
 import streamlit as st
@@ -23,7 +24,7 @@ os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]= "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"
 
 #loader = PyPDFLoader("sample.pdf")
-loader = TextLoader("sample.txt")
+loader = TextLoader("mgen.txt")
 docs = loader.load()
 
 #For large language models, it's not strictly required, but it can reduce noise and help with consistency, especially in RAG indexing.
@@ -54,7 +55,7 @@ llm = OllamaLLM(model="llama3",temperature=0.1,stream=True)
 # steam - This will enable streaming output, meaning tokens will be sent as they are generated (like a live typing effect), which improves perceived performance.
 
 ## Design ChatPrompt Template
-from langchain_core.prompts import ChatPromptTemplate
+
 
 prompt = ChatPromptTemplate.from_template("""
 You are a technical assistant. You must answer **only** using the context provided.
@@ -86,10 +87,52 @@ qa_chain = create_retrieval_chain(
 )
 
 
-# ## streamlit framework
+def submit_feedback():
+    feedback_data = {
+        "timestamp": str(datetime.datetime.now()),
+        "question": st.session_state.input_text,
+        "answer": st.session_state.last_answer,
+        "feedback": st.session_state.feedback
+    }
 
+    if st.session_state.feedback == "Yes":
+        st.write("Thank you for the feedback! We're glad the answer was correct and useful.")
+    else:
+        st.write("Thank you for the feedback! We'll work on improving the answers.")
+
+    if os.path.exists("feedback_log.json"):
+        with open("feedback_log.json", "r") as f:
+            try:
+                feedback_list = json.load(f)
+            except json.JSONDecodeError:
+                feedback_list = []
+    else:
+        feedback_list = []
+
+    feedback_list.append(feedback_data)
+
+    with open("feedback_log.json", "w") as f:
+        json.dump(feedback_list, f, indent=2)
+
+    st.session_state.input_text = ""  # ✅ safely reset input before re-render
+
+
+# streamlit framework for ui design
 st.title('Welcome to the MgenAi chatbot \U0001F916 ')
-input_text=st.text_input("Are you stuck with the cleanup or stage1 ?? Enter your question:")
+
+# Initialize session state
+if "input_text" not in st.session_state:
+    st.session_state.input_text = ""
+if "last_answer" not in st.session_state:
+    st.session_state.last_answer = ""
+if "feedback" not in st.session_state:
+    st.session_state.feedback = "Yes"
+
+# Text input
+input_text = st.text_input(
+    "Are you stuck with the cleanup or stage1 ?? Enter your question:",
+    key="input_text"
+)
 
 if input_text:
     context_text = "\n\n".join([doc.page_content for doc in retriever.get_relevant_documents(input_text)])
@@ -97,27 +140,13 @@ if input_text:
         "context": context_text,
         "input": input_text
     })
-    st.write("### Answer:")   #This is a Markdown string, and the ### indicates a level-3 heading in Markdown.
-    st.write(response['answer'])
+    st.session_state.last_answer = response['answer']
+    st.write("### Answer:")
+    st.write(st.session_state.last_answer)
 
-    feedback = st.radio("Was this answer helpful?", ["Yes", "No"])
-    submit_button = st.button("Submit Feedback")
+    st.radio("Was this answer helpful?", ["Yes", "No"], key="feedback")
+    st.button("Submit Feedback", on_click=submit_feedback)
 
-    if submit_button:
-        if feedback == "Yes":
-            st.write("Thank you for the feedback! We're glad the answer was correct and useful.")
-        else:
-            st.write("Thank you for the feedback! We'll work on improving the answers.")
-        feedback_data = {
-        "timestamp": str(datetime.datetime.now()),
-        "question": input_text,
-        "answer": response['answer'],
-        "feedback": feedback
-    }
-
-        # Store feedback (JSON or CSV)
-        with open("feedback_log.json", "a") as f:
-            f.write(json.dumps(feedback_data) + "\n")
             
    
    
