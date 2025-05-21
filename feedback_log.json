@@ -1,1 +1,14 @@
-{"timestamp": "2025-05-20 09:47:16.317659", "question": "command to login in nodes via lla", "answer": "The command to login in nodes via LLA is:\n\ncommands to login in nodes/switches via its ipv6 - ssh userid@[ipv6_address]\n\nNote: if you able to login in tor1 and not tor2 or vice-versa\nlogin in tor1(tor1) , run (net show clag)\nyou can take ipv4 of tor2 from tor1 and  make last digit of that ip as 2, login it using that ipv4 (ssh cumulus@169.254.1.2) and reboot tor2", "feedback": "No"}
+[
+  {
+    "timestamp": "2025-05-21 15:14:15.675982",
+    "question": "how to do mgen",
+    "answer": "Based on the provided context, here are the steps to perform MGEN:\n\n1. Check the firmware stack.\n2. Check the build ID.\n3. Run all node_config workflows or imm_config workflows in parallel.\n4. Run kickstart and rackinfo JSON workflow.\n5. Run stage1 tunnel workflow.\n6. Run restore TOR and reload workflow.\n\nI hope this helps!",
+    "feedback": "Yes"
+  },
+  {
+    "timestamp": "2025-05-21 15:14:47.974257",
+    "question": "how to check if firmware is tehre or not",
+    "answer": "According to the provided context, the steps to perform `mgen` are:\n\n1. **check the firmware stack**\n\nSo, to check if firmware is there or not, you should follow step 1: \"check the firmware stack\".",
+    "feedback": "No"
+  }
+]
