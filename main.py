@@ -13,17 +13,17 @@ from langchain.chains import LLMChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-
 import streamlit as st
 import os
 import json
-import redis
-
+import my_redis_cache
 
 
 
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]= "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"
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 
 embeddings = OllamaEmbeddings(model="llama3")
 
@@ -32,25 +32,25 @@ if os.path.exists(VECTORSTORE_PATH):
     db = FAISS.load_local(VECTORSTORE_PATH, embeddings, allow_dangerous_deserialization=True)
 
 else:
-        loader = PyPDFLoader("mgen.pdf")
-        # loader = TextLoader("mgen.txt")
-        docs = loader.load()
+    loader = PyPDFLoader("mgen.pdf")
+    # loader = TextLoader("mgen.txt")
+    docs = loader.load()
 
-        #For large language models, it's not strictly required, but it can reduce noise and help with consistency, especially in RAG indexing.
-        for doc in docs:
-            doc.page_content = doc.page_content.lower()
+    #For large language models, it's not strictly required, but it can reduce noise and help with consistency, especially in RAG indexing.
+    for doc in docs:
+        doc.page_content = doc.page_content.lower()
 
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1500,    # increase size
-            chunk_overlap=200,  # more overlap between chunks
-            separators = ["\n\n", "\n", ".", ";"] ,  # respects logical breaks)
+    
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1500,    # increase size
+        chunk_overlap=200,  # more overlap between chunks
+        separators = ["\n\n", "\n", ".", ";"] ,  # respects logical breaks)
+    )
 
-        )
-
-        documents=text_splitter.split_documents(docs)
-        # This embeds the documents and builds the vector store
-        db = FAISS.from_documents(documents, embeddings)
-        db.save_local(VECTORSTORE_PATH)
+    documents=text_splitter.split_documents(docs)
+    # This embeds the documents and builds the vector store
+    db = FAISS.from_documents(documents, embeddings)
+    db.save_local(VECTORSTORE_PATH)
 
 # # Set up retriever Lower k to reduce noise.
 retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 6})  # k increase you're getting more context chunks
@@ -94,26 +94,31 @@ qa_chain = create_retrieval_chain(
 
 context_text = ""
 
+
 def submit_feedback():
     feedback_data = {
         "question": st.session_state.input_text,
         "answer": st.session_state.last_answer,
         "feedback": st.session_state.feedback,
-        "context" : context_text
+        "context": st.session_state.context_text
     }
+
+    if st.session_state.feedback == "Yes" and not my_redis_cache.get_cached_answer(st.session_state.input_text):
+        my_redis_cache.set_cached_answer(st.session_state.input_text, st.session_state.last_answer)
 
     if st.session_state.feedback == "Yes":
         st.write("Thank you for the feedback! We're glad the answer was correct and useful.")
     else:
         st.write("Thank you for the feedback! We'll work on improving the answers.")
-
-    if os.path.exists("feedback_log.json"):
-        with open("feedback_log.json", "r") as f:
-            try:
-                feedback_list = json.load(f)
-            except json.JSONDecodeError:
-                feedback_list = []
-    else:
+    
+    feedback_file = "feedback_log.json"
+    if not os.path.exists(feedback_file):
+        with open(feedback_file, "w") as f:
+            json.dump([], f)
+    try:
+        with open(feedback_file, "r") as f:
+            feedback_list = json.load(f)
+    except json.JSONDecodeError:
         feedback_list = []
 
     feedback_list.append(feedback_data)
@@ -121,46 +126,72 @@ def submit_feedback():
     with open("feedback_log.json", "w") as f:
         json.dump(feedback_list, f, indent=2)
 
-    st.session_state.input_text = ""  # ✅ safely reset input before re-render
+    # ✅ Use flag to clear input on next rerun
+    st.session_state.clear_input = True
+    st.session_state.last_answer = ""
+    st.session_state.context_text = ""
+    st.session_state.feedback_submitted = True
+    st.rerun()
 
 
-# streamlit framework for ui design
+# Streamlit UI
 st.title('Welcome to the MgenAi chatbot \U0001F916 ')
 
 # Initialize session state
-if "input_text" not in st.session_state:
+for key, value in {
+    "input_text": "",
+    "last_answer": "",
+    "feedback": "Yes",
+    "context_text": "",
+    "feedback_submitted": False,
+    "clear_input": False
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+# Clear input before rendering text_input if flag is set
+if st.session_state.clear_input:
     st.session_state.input_text = ""
-if "last_answer" not in st.session_state:
-    st.session_state.last_answer = ""
-if "feedback" not in st.session_state:
-    st.session_state.feedback = "Yes"
+    st.session_state.clear_input = False
 
-# Text input
-input_text = st.text_input(
-    "Are you stuck with the cleanup or stage1 ?? Enter your question:",
-    key="input_text"
-)
+with st.form("question_form"):
+    input_text = st.text_input(
+        "Are you stuck with the cleanup or stage1? Enter your question:",
+        key="input_text"
+    )
+    submitted = st.form_submit_button("Submit")
 
-if input_text:
-    cache_response = redis.get_cached_answer(input_text)  #checking in cache
+if submitted and st.session_state.input_text.strip():
+    st.session_state.feedback_submitted = False
+
+    input_text = st.session_state.input_text
+    cache_response = my_redis_cache.get_cached_answer(input_text)
+
     if cache_response:
         st.session_state.last_answer = cache_response
-        st.write("### Answer:")
-        st.write(st.session_state.last_answer)
     else:
-        context_text = "\n\n".join([doc.page_content for doc in retriever.get_relevant_documents(input_text)])
+        st.session_state.context_text = "\n\n".join(
+            [doc.page_content for doc in retriever.invoke(input_text)]
+        )
         response = qa_chain.invoke({
-            "context": context_text,
+            "context": st.session_state.context_text,
             "input": input_text
         })
         st.session_state.last_answer = response['answer']
-        redis.set_cached_answer(input_text,st.session_state.last_answer)  #saving in cahe
-        st.write("### Answer:")
-        st.write(st.session_state.last_answer)
 
-    st.radio("Was this answer helpful?", ["Yes", "No"], key="feedback")
-    st.button("Submit Feedback", on_click=submit_feedback)
 
+if st.session_state.last_answer and not st.session_state.feedback_submitted:
+    st.write("### Answer:")
+    st.write(st.session_state.last_answer)
+
+    with st.form("feedback_form"):
+        st.radio("Was this answer helpful?", ["Yes", "No"], key="feedback")
+        feedback_submitted = st.form_submit_button("Submit Feedback")
+        if feedback_submitted:
+            submit_feedback()
+
+
+   
             
    
    

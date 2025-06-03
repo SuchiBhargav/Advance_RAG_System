@@ -3,13 +3,13 @@ source virenv/bin/activate
 pip install <package_name>
 deactivate  #to stop virtual env
 
-
+#pip3 freeze > requirement.txt ---- to install all the packages with version
 
 # to see list of all the installed packages 
 pip list
 
 
-ollama run llama2
+ollama run llama3
 ollama serve 
 if ollama running in background - pkill ollama
 else ctrl+c
@@ -26,3 +26,47 @@ ollama run mistral
     You must do this at least once after starting the server.
 
     Once the model is running, Ollama can handle queries and embedding requests.
+
+    #brew services start redis ---- to start redis
+
+    #brew services list
+
+
+    brew install redis installs the Redis server (the in-memory database).
+
+   pip install redis installs the Redis client library for Python so your Python app can connect to and interact with the Redis server.
+
+# Redis server
+brew install redis
+brew services start redis
+
+# Redis client for Python
+pip install redis
+hashlib - to generate a consistent, safe, and unique key for each question when storing it in Redis.
+
+
+to clear redis command 
+redis-cli flushdb
+redis-cli flushall
+pip3 install docling (for image parsing)
+
+
+What is st.session_state?
+
+    st.session_state is a special dictionary-like object provided by Streamlit.
+
+    It stores values that persist across reruns of your Streamlit app.
+
+    Normally, Streamlit runs your script top to bottom on every user interaction, so all variables reset.
+
+    st.session_state lets you keep data alive between those reruns — like user inputs, flags, counters, etc.
+
+How does it work internally?
+
+    Streamlit runs your entire script on every interaction (like a button click or input).
+
+    Before each run, Streamlit restores st.session_state from the browser/user session.
+
+    When your script modifies st.session_state, Streamlit saves those changes back to the session.
+
+    This way, data inside st.session_state persists across reruns and between widgets.
