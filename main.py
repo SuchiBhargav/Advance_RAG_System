@@ -17,6 +17,7 @@ import streamlit as st
 import os
 import json
 import my_redis_cache
+import shutil
 
 
 
@@ -28,11 +29,17 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 embeddings = OllamaEmbeddings(model="llama3")
 
 VECTORSTORE_PATH = "faiss_index"
+
+#clear old FAISS index if you want to rebuild it
+# if os.path.exists(VECTORSTORE_PATH):
+#     shutil.rmtree(VECTORSTORE_PATH)  # Deletes the old vectorstore
+
+# Load existing FAISS index
 if os.path.exists(VECTORSTORE_PATH):
     db = FAISS.load_local(VECTORSTORE_PATH, embeddings, allow_dangerous_deserialization=True)
 
 else:
-    loader = PyPDFLoader("mgen.pdf")
+    loader = PyPDFLoader("mgen_issue.pdf")
     # loader = TextLoader("mgen.txt")
     docs = loader.load()
 

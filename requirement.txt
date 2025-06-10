@@ -6,6 +6,11 @@ langchain-ollama
 pypdf
 redis
 docling
+pytesseract 
+pdf2image 
+pillow
+tesseract  
+poppler 
 
 
 
