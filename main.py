@@ -142,7 +142,7 @@ def submit_feedback():
 
 
 # Streamlit UI
-st.title('Welcome to the MgenAi chatbot \U0001F916 ')
+st.title('RackBot \U0001F916 : Smart Deployment Assistant')
 
 # Initialize session state
 for key, value in {
