@@ -1,0 +1,69 @@
+# Core Dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-multipart==0.0.6
+
+# LangChain and LLM
+langchain==0.1.6
+langchain-community==0.0.19
+langchain-core==0.1.23
+langchain-ollama==0.0.1
+langgraph==0.0.26
+
+# Vector Store and Search
+qdrant-client==1.7.3
+faiss-cpu==1.7.4
+rank-bm25==0.2.2
+
+# Embeddings and Models
+sentence-transformers==2.3.1
+transformers==4.37.2
+torch==2.1.2
+
+# Document Processing
+pypdf==4.0.1
+python-docx==1.1.0
+docling==1.0.0
+pytesseract==0.3.10
+pdf2image==1.17.0
+Pillow==10.2.0
+
+# Caching and Database
+redis==5.0.1
+hiredis==2.3.2
+
+# Evaluation
+ragas==0.1.4
+datasets==2.16.1
+
+# Monitoring and Observability
+prometheus-client==0.19.0
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+opentelemetry-instrumentation-fastapi==0.43b0
+
+# Utilities
+python-dotenv==1.0.0
+numpy==1.26.3
+pandas==2.2.0
+tenacity==8.2.3
+httpx==0.26.0
+
+# Development
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+pre-commit==3.6.0
+
+# Streamlit (for UI)
+streamlit==1.31.0
+
+# Additional
+aiofiles==23.2.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
